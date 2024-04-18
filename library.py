@@ -3,12 +3,13 @@ import sqlite3
 from datetime import datetime
 import argparse
 import random
+from books import bookSetUp
 
 conn = sqlite3.connect('libraryDB.db')
 cursor = conn.cursor()
 
 def populate():
-    pass
+    bookSetUp()
 
 
 def create_user(name):
