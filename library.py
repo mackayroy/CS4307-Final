@@ -3,20 +3,29 @@ import sqlite3
 from datetime import datetime
 import argparse
 import random
-from books import bookSetUp
+from faker import Faker
+from data import getBooks, getUsernames
 
 conn = sqlite3.connect('libraryDB.db')
 cursor = conn.cursor()
 
+def bookSetUp():
+    books = getBooks()
+    conditionOfBook = ["Good", "Very Good", "Poor", "Fair"]
+    print(len(books))
+    for book in books:
+        condition = random.choice(conditionOfBook)
+        cursor.execute("INSERT INTO books (name,genre,pages,quality, availability) VALUES (?,?,?,?,?)", (book["title"],book["genre"].split(",")[0],book["page_count"],condition, 1))
+        conn.commit()
+
 def populate():
     bookSetUp()
-
-
-def create_user(name):
-    print(f"User created with the name {name}")
-    cursor.execute("INSERT INTO users (name) VALUES (?)", (name,))
-    conn.commit()
-
+    usernames = getUsernames()
+    fake = Faker()
+    names = [fake.name() for _ in range(100)]
+    for i in range(100):
+        cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (names[i], usernames[i]))
+        conn.commit()
 
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
@@ -28,8 +37,8 @@ def main():
 
     args = parser.parse_args()
     
-    if args.action == 'create_user':
-        create_user(args.name)
+    if args.action == 'populate':
+        populate()
     
     
 

@@ -1,15 +1,5 @@
-import sqlite3
-from datetime import datetime
-import argparse
-import random
-
-conn = sqlite3.connect('libraryDB.db.db')
-cursor = conn.cursor()
-
-def bookSetUp():
-    # CS4307-Final
-    conditionOfBook = ["Good", "Very Good", "Poor", "Fair"]
-    books = [
+def getBooks():
+    return [
     {
     "title": "1984",
     "genre": "Dystopian fiction",
@@ -560,7 +550,10 @@ def bookSetUp():
     }
     ]
 
-    for book in books:
-        condition = random.choice(conditionOfBook)
-        cursor.execute("INSERT INTO books (name,genre,pages,quality) VALUES (?,?,?,?)", (book["title"],book["genre"].spilt(",")[0],book["page_count"],condition))
-        conn.commit()
+
+def getUsernames():
+    return ["butter123", "angelic456", "climbing789", "baackpacks234", "paprika567", "guatemala890", "strawberry123", "watermelon456", "blueberry789", "raspberry234","kiwi567", "mango890", "apricot123", "peach456", "pear789", "plum234", "lemon567", "lime890", "coconut123", "papaya456","melon789", "avocado234", "fig567", "date890", "cranberry123", "elderberry456", "guava789", "honeydew234", "nectarine567", "lychee890","persimmon123", "boysenberry456", "mulberry789", "kumquat234", "tangerine567", "cantaloupe890", "dragonfruit123", "pomegranate456", "passionfruit789", "kiwifruit234",
+    "grapefruit567", "apricot890", "gooseberry123", "starfruit456", "rhubarb789", "blackberry234", "currant567", "mandarin890", "pawpaw123", "persimmon456","plantain789", "pomelo234", "quince567", "tamarillo890", "ugli123", "acai456", "bilberry789", "carissa234", "durian567", "jaboticaba890","kiwano123", "loganberry456", "mangosteen789", "papaya234", "passionfruit567", "pummelo890", "tamarind123", "yuzu456", "zucchini789", "almond234","cashew567", "chestnut890", "hazelnut123", "macadamia456", "peanut789", "pecan234", "pistachio567", "walnut890", "sunflower123", "daffodil456",
+    "daisy789", "tulip234", "rose567", "lily890", "orchid123", "iris456", "hydrangea789", "jasmine234", "lilac567", "carnation890","sunflower123", "dahlia456", "chrysanthemum789", "poinsettia234", "aster567", "peony890", "gladiolus123", "cosmos456", "snapdragon789", "zinnia234","hibiscus567", "lavender890", "bougainvillea123", "freesia456", "gardenia789", "magnolia234", "marigold567", "narcissus890", "oleander123", "orchid456","petunia789", "rhododendron234", "tulip567", "violet890", "zinnia123", "daisy456", "tulip789", "rose234", "lily567", "orchid890",
+    "iris123", "sunflower456", "hydrangea789", "jasmine234", "lilac567", "carnation890", "sunflower123", "dahlia456", "chrysanthemum789", "poinsettia234","aster567", "peony890", "gladiolus123", "cosmos456", "snapdragon789", "zinnia234", "hibiscus567", "lavender890", "bougainvillea123", "freesia456","gardenia789", "magnolia234", "marigold567", "narcissus890", "oleander123", "orchid456", "petunia789", "rhododendron234", "tulip567", "violet890", "crocus123", "daisy456", "lilac789", "sunflower234", "tulip567","rose890", "lily123", "orchid456", "iris789", "hydrangea234","jasmine567", "dahlia890", "chrysanthemum123", "poinsettia456", "aster789",
+    "peony234", "gladiolus567", "cosmos890", "snapdragon123", "zinnia456","hibiscus789", "lavender234", "bougainvillea567", "freesia890", "gardenia123","magnolia456", "marigold789", "narcissus234", "oleander567", "orchid890","petunia123", "rhododendron456", "tulip789", "violet234", "zinnia567","daisy890", "tulip123", "rose456", "lily789", "orchid234","iris567", "sunflower890", "hydrangea123", "jasmine456", "lilac789","carnation234", "sunflower567", "dahlia890", "chrysanthemum123", "poinsettia456"]
