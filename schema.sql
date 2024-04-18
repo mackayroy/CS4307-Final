@@ -1,0 +1,26 @@
+CREATE TABLE cardholders (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+);
+
+CREATE TABLE books (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    genre TEXT NOT NULL,
+    pages INTEGER NOT NULL,
+    quality TEXT NOT NULL,
+);
+
+CREATE TABLE checkouts (
+    id INTEGER PRIMARY KEY,
+    cardholderId INTEGER NOT NULL,
+    bookId INTEGER NOT NULL,
+    quality TEXT NOT NULL,
+);
+
+CREATE TABLE checkins (
+    id INTEGER PRIMARY KEY,
+    cardholderId INTEGER NOT NULL,
+    bookId INTEGER NOT NULL,
+    quality TEXT NOT NULL,
+)
