@@ -17,20 +17,7 @@ def bookSetUp():
         cursor.execute("INSERT INTO books (name,genre,pages,quality, availability) VALUES (?,?,?,?,?)", (book["title"],book["genre"].split(",")[0],book["page_count"],condition, 1))
         conn.commit()
 
-def populate():
-    bookSetUp()
-    usernames = getUsernames()
-    fake = Faker()
-    names = [fake.name() for _ in range(100)]
-    for i in range(100):
-        cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (names[i], usernames[i]))
-        conn.commit()
-
-def getAvaliableBooks():
-    cursor.execute("SELECT * FROM books WHERE availability = 1")
-    conn.commit()
-
-def checkOut():
+def checkOutSetup():
     cursor.execute("SELECT id FROM cardholders")
     cardholderID = cursor.fetchall()
     cursor.execute("SELECT id FROM books WHERE availability = 1")
@@ -49,6 +36,20 @@ def checkOut():
         cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (insertBook,))
     conn.commit()
 
+def populate():
+    bookSetUp()
+    usernames = getUsernames()
+    fake = Faker()
+    names = [fake.name() for _ in range(100)]
+    for i in range(100):
+        cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (names[i], usernames[i]))
+        conn.commit()
+    checkOutSetup()
+
+def getAvaliableBooks():
+    cursor.execute("SELECT * FROM books WHERE availability = 1")
+    conn.commit()
+
 
 def mostPopular():
     cursor.execute("""SELECT b.name AS book_name, COUNT(c.bookId) AS borrowed
@@ -60,13 +61,37 @@ def mostPopular():
                 """)
     conn.commit()
 
+def addCardholder(name, username):
+    cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (name, username))
+    conn.commit()
+
+def addBook(name, genre, pages, quality, availability):
+    cursor.execute("INSERT INTO books (name, genre, pages, quality, availability) VALUES (?,?,?,?,?)", (name, genre, pages, quality, availability))
+    conn.commit()
+
+def checkOutBook(cardholderId, bookId, quality):
+    cursor.execute("INSERT INTO checkouts (cardholderId, bookId, quality) VALUES (?,?,?)", (cardholderId, bookId, quality))
+    cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (bookId,))
+    conn.commit()
+
+def returnBook(cardholderId, bookId):
+    cursor.execute("DELETE FROM checkouts WHERE cardholderId = ? AND bookId = ?", (cardholderId, bookId))
+    cursor.execute("UPDATE books SET availability = 1 WHERE id = ?", (bookId,))
+    conn.commit()
+
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
-    parser.add_argument('action', choices=['populate','getAvaliableBooks','mostPopular','checkOut'],
+    parser.add_argument('action', choices=['populate','getAvaliableBooks','mostPopular', 'addCardholder', 'addBook', 'checkOutBook', 'returnBook'],
                         help='Action to perform')
     
     parser.add_argument('--name')
-    
+    parser.add_argument('--username')
+    parser.add_argument('--genre')
+    parser.add_argument('--pages')
+    parser.add_argument('--quality')
+    parser.add_argument('--availability')
+    parser.add_argument('--cardholderId')
+    parser.add_argument('--bookId')
 
     args = parser.parse_args()
     
@@ -76,8 +101,14 @@ def main():
         getAvaliableBooks()
     if args.action == 'mostPopular':
         mostPopular()
-    if args.action == 'checkOut':
-        checkOut()
+    if args.action == 'addCardholder':
+        addCardholder(args.name, args.username)
+    if args.action == 'addBook':
+        addBook(args.name, args.genre, args.pages, args.quality, args.availability)
+    if args.action == 'checkOutBook':
+        checkOutBook(args.cardholderId, args.bookId, args.quality)
+    if args.action == 'returnBook':
+        returnBook(args.cardholderId, args.bookId)
     
 
 if __name__ == "__main__":
