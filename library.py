@@ -34,12 +34,14 @@ def checkOut():
     cursor.execute("SELECT id FROM cardholders")
     cardholderID = cursor.fetchall()
     cursor.execute("SELECT id FROM books WHERE availability = 1")
-    bookID = cursor.fetchall()
+    bookID = cursor.fetchall()  
 
 
     for _ in range(100):
         insetCard = random.choice(cardholderID)[0]
         insertBook = random.choice(bookID)[0]
+        cursor.execute("SELECT name from books WHERE id = ?", (insertBook,))
+        book = cursor.fetchone()
         cursor.execute("SELECT quality FROM books WHERE id = ?", (insertBook,))
         quality = cursor.fetchone()
         insertQuality = quality[0]
