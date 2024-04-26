@@ -26,6 +26,8 @@ def checkOutSetup():
 
     for _ in range(100):
         insetCard = random.choice(cardholderID)[0]
+        cursor.execute("SELECT name from cardholders WHERE id = ?", (insetCard,))
+        name = cursor.fetchone()
         insertBook = random.choice(bookID)[0]
         cursor.execute("SELECT name from books WHERE id = ?", (insertBook,))
         book = cursor.fetchone()
@@ -34,6 +36,7 @@ def checkOutSetup():
         insertQuality = quality[0]
         cursor.execute("INSERT INTO checkouts (cardholderId, bookId, quality) VALUES (?,?,?)", (insetCard,insertBook,insertQuality))
         cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (insertBook,))
+        print(f"{name[0]} checkout the book {book[0]} today.")
     conn.commit()
 
 def populate():
@@ -46,42 +49,57 @@ def populate():
         conn.commit()
     checkOutSetup()
 
-def getAvaliableBooks():
+def getAvailableBooks():
     cursor.execute("SELECT * FROM books WHERE availability = 1")
+    books = cursor.fetchall()
+    for book in books:
+        print("Available Books")
+        print("----------------")
+        print(book[1])
     conn.commit()
 
+def getAvgPages():
+    cursor.execute("""SELECT genre, AVG(pages) FROM books GROUP BY genre""")
+    books = cursor.fetchall()
+    for book in books:
+        print(f"The Genre {book[0]} has the average page count of {round(book[1],0)}")
 
-def mostPopular():
-    cursor.execute("""SELECT b.name AS book_name, COUNT(c.bookId) AS borrowed
-                    FROM books b
-                    JOIN checkouts c ON b.id = c.bookId
-                    GROUP BY b.id
-                    ORDER BY borrowed DESC
-                    LIMIT 5;
-                """)
-    conn.commit()
+def cardHolderBooks(username):
+    cursor.execute("""SELECT books.name FROM books 
+                   JOIN checkouts ON books.id = checkouts.bookId
+                   JOIN cardholders ON checkouts.cardholderId = cardholders.id
+                   WHERE cardholders.username = ?""",(username,))
+
+    userbooks = cursor.fetchall()
+    for book in userbooks:
+        print(f"{username} has checkout {book[0]}")
 
 def addCardholder(name, username):
+    print(f"User with the name {name} created a username {username}")
     cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (name, username))
     conn.commit()
 
 def addBook(name, genre, pages, quality, availability):
+    print(f"{name} was added into the library")
     cursor.execute("INSERT INTO books (name, genre, pages, quality, availability) VALUES (?,?,?,?,?)", (name, genre, pages, quality, availability))
     conn.commit()
 
 def checkOutBook(cardholderId, bookId, quality):
+    print(f"Book was checkout")
     cursor.execute("INSERT INTO checkouts (cardholderId, bookId, quality) VALUES (?,?,?)", (cardholderId, bookId, quality))
     cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (bookId,))
     conn.commit()
 
 def returnBook(cardholderId, bookId):
+    print(f"Book was returned")
     cursor.execute("DELETE FROM checkouts WHERE cardholderId = ? AND bookId = ?", (cardholderId, bookId))
     cursor.execute("UPDATE books SET availability = 1 WHERE id = ?", (bookId,))
     conn.commit()
 
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
-    parser.add_argument('action', choices=['populate','getAvaliableBooks','mostPopular', 'addCardholder', 'addBook', 'checkOutBook', 'returnBook'],
+    parser.add_argument('action', choices=['populate','getBooks','mostAvailablePopular', 'addCardholder', 'addBook', 
+                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks'],
                         help='Action to perform')
     
     parser.add_argument('--name')
@@ -97,10 +115,10 @@ def main():
     
     if args.action == 'populate':
         populate()
-    if args.action == 'getAvaliableBooks':
-        getAvaliableBooks()
-    if args.action == 'mostPopular':
-        mostPopular()
+    if args.action == 'getAvailableBooks':
+        getAvailableBooks()
+    if args.action == 'getAvgPages':
+        getAvgPages()
     if args.action == 'addCardholder':
         addCardholder(args.name, args.username)
     if args.action == 'addBook':
@@ -109,6 +127,8 @@ def main():
         checkOutBook(args.cardholderId, args.bookId, args.quality)
     if args.action == 'returnBook':
         returnBook(args.cardholderId, args.bookId)
+    if args.action == 'cardHolderBooks':
+        cardHolderBooks(args.username)
     
 
 if __name__ == "__main__":
