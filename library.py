@@ -52,10 +52,12 @@ def populate():
 def getAvailableBooks():
     cursor.execute("SELECT * FROM books WHERE availability = 1")
     books = cursor.fetchall()
+    print("Available Books")
+    print("----------------")
+    number = 1
     for book in books:
-        print("Available Books")
-        print("----------------")
-        print(book[1])
+        print(f"{number}. {book[1]}")
+        number += 1
     conn.commit()
 
 def getAvgPages():
@@ -71,8 +73,11 @@ def cardHolderBooks(username):
                    WHERE cardholders.username = ?""",(username,))
 
     userbooks = cursor.fetchall()
-    for book in userbooks:
-        print(f"{username} has checkout {book[0]}")
+    if userbooks:
+        for book in userbooks:
+            print(f"{username} has checkout {book[0]}")
+    else:
+        print("User has not checkout books")
 
 def addCardholder(name, username):
     print(f"User with the name {name} created a username {username}")
@@ -96,10 +101,43 @@ def returnBook(cardholderId, bookId):
     cursor.execute("UPDATE books SET availability = 1 WHERE id = ?", (bookId,))
     conn.commit()
 
+def getNewBooks(username):
+    cursor.execute("""
+                   WITH UserCheckouts AS (
+                    SELECT books.*
+                    FROM checkouts
+                    JOIN cardholders ON checkouts.cardholderId = cardholders.id
+                    JOIN books ON checkouts.bookId = books.id
+                    WHERE cardholders.username = ?
+                )
+                    SELECT recommended_books.*
+                    FROM UserCheckouts
+                    JOIN books recommended_books ON UserCheckouts.genre = recommended_books.genre
+                    WHERE recommended_books.id NOT IN (
+                    SELECT bookId FROM checkouts WHERE cardholderId = (SELECT id FROM cardholders WHERE username = ?)
+                    )
+                    LIMIT 5;
+    """, (username, username))
+
+    recommended_books = cursor.fetchall()
+    
+    if recommended_books:
+        print("Recommended books for", username + ":")
+        for book in recommended_books:
+            print("- Name:", book[1])
+            print("  Genre:", book[2])
+            print("  Pages:", book[3])
+            print("  Quality:", book[4])
+            print("  Availability:", book[5])
+            print() 
+    else:
+        print("No recommended books found for", username)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
-    parser.add_argument('action', choices=['populate','getBooks','mostAvailablePopular', 'addCardholder', 'addBook', 
-                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks'],
+    parser.add_argument('action', choices=['populate','getAvailableBooks','mostAvailablePopular', 'addCardholder', 'addBook', 
+                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks'],
                         help='Action to perform')
     
     parser.add_argument('--name')
@@ -129,6 +167,8 @@ def main():
         returnBook(args.cardholderId, args.bookId)
     if args.action == 'cardHolderBooks':
         cardHolderBooks(args.username)
+    if args.action == 'getNewBooks':
+        getNewBooks(args.username)
     
 
 if __name__ == "__main__":
