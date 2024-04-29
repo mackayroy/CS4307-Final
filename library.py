@@ -133,11 +133,27 @@ def getNewBooks(username):
     else:
         print("No recommended books found for", username)
 
+def mostPopular():
+    cursor.execute("""
+                    SELECT b.name AS most_popular_book, COUNT(c.id) AS checkout_count
+                    FROM books b
+                    JOIN checkouts c ON b.id = c.bookId
+                    GROUP BY b.id
+                    ORDER BY checkout_count DESC
+                    LIMIT 1;
+        """)
+    book = cursor.fetchone()
+    if book:
+        print("The most popular book is:", book[0])
+        print("Number of checkouts:", book[1])
+    else:
+        print("No books have been checked out yet.")
+
 
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
     parser.add_argument('action', choices=['populate','getAvailableBooks','mostAvailablePopular', 'addCardholder', 'addBook', 
-                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks'],
+                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks','mostPopular'],
                         help='Action to perform')
     
     parser.add_argument('--name')
@@ -169,6 +185,8 @@ def main():
         cardHolderBooks(args.username)
     if args.action == 'getNewBooks':
         getNewBooks(args.username)
+    if args.action == 'mostPopular':
+        mostPopular()
     
 
 if __name__ == "__main__":
