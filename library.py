@@ -90,13 +90,13 @@ def getAvgPages():
         print(f"The Genre {book[0]} has the average page count of {round(book[1],0)}")
 
 def cardHolderBooks(username):
-    cursor.execute("""SELECT books.name 
-                    FROM books 
-                    JOIN checkins ON books.id = checkins.bookId
-                    JOIN cardholders ON checkins.username = cardholders.username
-                    WHERE cardholders.username = ?""",(username,))
+    cursor.execute("""SELECT b.name AS book_name
+                    FROM checkins AS ci
+                    JOIN books AS b ON ci.bookId = b.id
+                    WHERE ci.username = ?;""",(username,))
 
     userbooks = cursor.fetchall()
+    print(userbooks)
     if userbooks:
         for book in userbooks:
             print(f"{username} has checkout {book[0]}")
