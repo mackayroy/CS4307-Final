@@ -21,7 +21,7 @@ def checkSetup():
     qualities = ["Poor", "Fair", "Good", "Very Good"]
     cursor.execute("SELECT id FROM cardholders")
     cardIds = cursor.fetchall()
-    for i in range(202):
+    for i in range(200):
         cursor.execute("SELECT username from cardholders WHERE id = ?", (cardIds[i//2][0],))
         username = cursor.fetchone()[0]
         cursor.execute("SELECT id FROM books WHERE availability = 1")
@@ -44,7 +44,7 @@ def checkSetup():
         quality = cursor.fetchone()[0]
         if qualities.index(quality) == 0:
             newQuality = 0
-        if random.choice([range(5)]):
+        elif random.choice(range(5)) != 0:
             newQuality = qualities.index(quality)
         else:
             newQuality = random.choice(range(qualities.index(quality)))
@@ -67,9 +67,7 @@ def populate():
     usernames = getUsernames()
     fake = Faker()
     names = [fake.name() for _ in range(100)]
-    names.append("Jack Snyder")
-    usernames.append("jacksnyder")
-    for i in range(101):
+    for i in range(100):
         cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (names[i], usernames[i]))
         conn.commit()
     checkSetup()
@@ -90,16 +88,16 @@ def getAvgPages():
         print(f"The Genre {book[0]} has the average page count of {round(book[1],0)}")
 
 def cardHolderBooks(username):
-    cursor.execute("""SELECT b.name AS book_name
-                    FROM checkins AS ci
-                    JOIN books AS b ON ci.bookId = b.id
-                    WHERE ci.username = ?;""",(username,))
+    cursor.execute("""SELECT DISTINCT books.name 
+                    FROM books 
+                    JOIN checkouts ON books.id = checkouts.bookId
+                    JOIN cardholders ON checkouts.username = cardholders.username
+                    WHERE cardholders.username = ?""",(username,))
 
     userbooks = cursor.fetchall()
-    print(userbooks)
     if userbooks:
         for book in userbooks:
-            print(f"{username} has checkout {book[0]}")
+            print(f"{username} has checked out {book[0]}")
     else:
         print("User has not checked out any books")
 
@@ -133,22 +131,20 @@ def returnBook(username, bookId):
     conn.commit()
 
 def getNewBooks(username):
-    cursor.execute("""
-                   WITH UserCheckouts AS (
-                    SELECT books.*
-                    FROM checkouts
-                    JOIN cardholders ON checkouts.cardholderId = cardholders.id
-                    JOIN books ON checkouts.bookId = books.id
-                    WHERE cardholders.username = ?
-                )
+    cursor.execute("""WITH UserCheckouts AS (
+                        SELECT DISTINCT books.*
+                        FROM checkouts
+                        JOIN cardholders ON checkouts.username = cardholders.username
+                        JOIN books ON checkouts.bookId = books.id
+                        WHERE cardholders.username = ?
+                    )
                     SELECT recommended_books.*
                     FROM UserCheckouts
                     JOIN books recommended_books ON UserCheckouts.genre = recommended_books.genre
                     WHERE recommended_books.id NOT IN (
-                    SELECT bookId FROM checkouts WHERE cardholderId = (SELECT id FROM cardholders WHERE username = ?)
+                        SELECT bookId FROM checkouts WHERE username = ?
                     )
-                    LIMIT 5;
-    """, (username, username))
+                    LIMIT 5""", (username, username))
 
     recommended_books = cursor.fetchall()
     
