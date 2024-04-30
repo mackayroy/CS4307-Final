@@ -144,7 +144,7 @@ def getNewBooks(username):
                     WHERE recommended_books.id NOT IN (
                         SELECT bookId FROM checkouts WHERE username = ?
                     )
-                    LIMIT 5""", (username, username))
+                    LIMIT 3""", (username, username))
 
     recommended_books = cursor.fetchall()
     
