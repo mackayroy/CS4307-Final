@@ -196,12 +196,32 @@ def bestCarer():
     for i in range(5):
         print(f"Cardholder {sortedCarers[i][0]} has returned {sortedCarers[i][1]} out of {sortedCarers[i][2]} books with the same quality")
 
+def worstCarer():
+    cursor.execute("""
+    SELECT ch.name AS user_name,
+        COALESCE(rb.same_quality_returned, 0) AS same_quality_returned_count,
+        COALESCE(rb.total_returned, 0) AS total_returned_count
+    FROM cardholders AS ch
+    LEFT JOIN (
+        SELECT c.username AS username,
+            COUNT(*) AS total_returned,
+            SUM(CASE WHEN c.quality = ci.quality THEN 1 ELSE 0 END) AS same_quality_returned
+        FROM checkouts AS c
+        JOIN checkins AS ci ON c.username = ci.username AND c.bookId = ci.bookId
+        GROUP BY c.username
+    ) AS rb ON ch.username = rb.username;
+    """)
+    carers = cursor.fetchall()
+    sortedCarers = sorted([user for user in carers if user[2] >= 20], key=lambda x: x[1] / x[2] if x[2] != 0 else 0, reverse=False)
+    for i in range(5):
+        print(f"Cardholder {sortedCarers[i][0]} has returned {sortedCarers[i][1]} out of {sortedCarers[i][2]} books with the same quality")
+
 
 
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
     parser.add_argument('action', choices=['populate','getAvailableBooks','mostAvailablePopular', 'addCardholder', 'addBook', 
-                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks','mostPopular', 'bestCarer'],
+                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks','mostPopular', 'bestCarer', 'worstCarer'],
                         help='Action to perform')
     
     parser.add_argument('--name')
@@ -237,6 +257,8 @@ def main():
         mostPopular()
     if args.action == 'bestCarer':
         bestCarer()
+    if args.action == 'worstCarer':
+        worstCarer()
     
 
 if __name__ == "__main__":
