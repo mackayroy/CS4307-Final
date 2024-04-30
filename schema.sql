@@ -15,14 +15,14 @@ CREATE TABLE books (
 
 CREATE TABLE checkouts (
     id INTEGER PRIMARY KEY,
-    cardholderId INTEGER NOT NULL,
+    username INTEGER NOT NULL,
     bookId INTEGER NOT NULL,
     quality TEXT NOT NULL
 );
 
 CREATE TABLE checkins (
     id INTEGER PRIMARY KEY,
-    cardholderId INTEGER NOT NULL,
+    username INTEGER NOT NULL,
     bookId INTEGER NOT NULL,
     quality TEXT NOT NULL
 );

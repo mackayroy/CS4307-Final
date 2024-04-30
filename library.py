@@ -17,26 +17,47 @@ def bookSetUp():
         cursor.execute("INSERT INTO books (name,genre,pages,quality, availability) VALUES (?,?,?,?,?)", (book["title"],book["genre"].split(",")[0],book["page_count"],condition, 1))
         conn.commit()
 
-def checkOutSetup():
+def checkSetup():
+    qualities = ["Poor", "Fair", "Good", "Very Good"]
     cursor.execute("SELECT id FROM cardholders")
-    cardholderID = cursor.fetchall()
-    cursor.execute("SELECT id FROM books WHERE availability = 1")
-    bookID = cursor.fetchall()  
-
-
-    for _ in range(100):
-        insetCard = random.choice(cardholderID)[0]
-        cursor.execute("SELECT name from cardholders WHERE id = ?", (insetCard,))
-        name = cursor.fetchone()
-        insertBook = random.choice(bookID)[0]
-        cursor.execute("SELECT name from books WHERE id = ?", (insertBook,))
-        book = cursor.fetchone()
-        cursor.execute("SELECT quality FROM books WHERE id = ?", (insertBook,))
+    cardIds = cursor.fetchall()
+    for i in range(202):
+        cursor.execute("SELECT username from cardholders WHERE id = ?", (cardIds[i//2][0],))
+        username = cursor.fetchone()[0]
+        cursor.execute("SELECT id FROM books WHERE availability = 1")
+        bookIds = cursor.fetchall()  
+        bookId = random.choice(bookIds)[0]
+        cursor.execute("SELECT quality FROM books WHERE id = ?", (bookId,))
         quality = cursor.fetchone()
         insertQuality = quality[0]
-        cursor.execute("INSERT INTO checkouts (cardholderId, bookId, quality) VALUES (?,?,?)", (insetCard,insertBook,insertQuality))
-        cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (insertBook,))
-        print(f"{name[0]} checkout the book {book[0]} today.")
+        cursor.execute("INSERT INTO checkouts (username, bookId, quality) VALUES (?,?,?)", (username,bookId,insertQuality))
+        cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (bookId,))
+
+    for _ in range(10000):
+        cardId = random.choice(cardIds)[0]
+        cursor.execute("SELECT username from cardholders WHERE id = ?", (cardId,))
+        username = cursor.fetchone()[0]
+        cursor.execute("SELECT bookId FROM checkouts WHERE username = ?", (username,))
+        bookIds = cursor.fetchall()
+        bookId = random.choice(bookIds)[0]
+        cursor.execute("SELECT quality FROM books WHERE id = ?", (bookId,))
+        quality = cursor.fetchone()[0]
+        if qualities.index(quality) == 0:
+            newQuality = 0
+        else:
+            newQuality = random.choice(range(qualities.index(quality)))
+        cursor.execute("INSERT INTO checkins (username, bookId, quality) VALUES (?,?,?)", (username,bookId,qualities[newQuality]))
+        cursor.execute("UPDATE books SET availability = 1 WHERE id = ?", (bookId,))
+        cursor.execute("SELECT id FROM books WHERE availability = 1")
+        bookIds = cursor.fetchall()  
+        bookId = random.choice(bookIds)[0]
+        cursor.execute("SELECT quality FROM books WHERE id = ?", (bookId,))
+        quality = cursor.fetchone()[0]
+        cursor.execute("INSERT INTO checkouts (username, bookId, quality) VALUES (?,?,?)", (username,bookId,quality))
+
+
+
+
     conn.commit()
 
 def populate():
@@ -44,10 +65,12 @@ def populate():
     usernames = getUsernames()
     fake = Faker()
     names = [fake.name() for _ in range(100)]
-    for i in range(100):
+    names.append("Jack Snyder")
+    usernames.append("jacksnyder")
+    for i in range(101):
         cursor.execute("INSERT INTO cardholders (name, username) VALUES (?,?)", (names[i], usernames[i]))
         conn.commit()
-    checkOutSetup()
+    checkSetup()
 
 def getAvailableBooks():
     cursor.execute("SELECT * FROM books WHERE availability = 1")
@@ -89,15 +112,15 @@ def addBook(name, genre, pages, quality, availability):
     cursor.execute("INSERT INTO books (name, genre, pages, quality, availability) VALUES (?,?,?,?,?)", (name, genre, pages, quality, availability))
     conn.commit()
 
-def checkOutBook(cardholderId, bookId, quality):
+def checkOutBook(username, bookId, quality):
     print(f"Book was checkout")
-    cursor.execute("INSERT INTO checkouts (cardholderId, bookId, quality) VALUES (?,?,?)", (cardholderId, bookId, quality))
+    cursor.execute("INSERT INTO checkouts (cardholderId, bookId, quality) VALUES (?,?,?)", (username, bookId, quality))
     cursor.execute("UPDATE books SET availability = 0 WHERE id = ?", (bookId,))
     conn.commit()
 
-def returnBook(cardholderId, bookId):
+def returnBook(username, bookId):
     print(f"Book was returned")
-    cursor.execute("DELETE FROM checkouts WHERE cardholderId = ? AND bookId = ?", (cardholderId, bookId))
+    cursor.execute("DELETE FROM checkouts WHERE cardholderId = ? AND bookId = ?", (username, bookId))
     cursor.execute("UPDATE books SET availability = 1 WHERE id = ?", (bookId,))
     conn.commit()
 
@@ -149,11 +172,32 @@ def mostPopular():
     else:
         print("No books have been checked out yet.")
 
+def bestCarer():
+    cursor.execute("""
+    SELECT ch.name AS user_name,
+        COALESCE(rb.same_quality_returned, 0) AS same_quality_returned_count,
+        COALESCE(rb.total_returned, 0) AS total_returned_count
+    FROM cardholders AS ch
+    LEFT JOIN (
+        SELECT c.username AS username,
+            COUNT(*) AS total_returned,
+            SUM(CASE WHEN c.quality = ci.quality THEN 1 ELSE 0 END) AS same_quality_returned
+        FROM checkouts AS c
+        JOIN checkins AS ci ON c.username = ci.username AND c.bookId = ci.bookId
+        GROUP BY c.username
+    ) AS rb ON ch.username = rb.username;
+    """)
+    carers = cursor.fetchall()
+    sortedCarers = sorted([user for user in carers if user[2] >= 5], key=lambda x: x[1] / x[2] if x[2] != 0 else 0, reverse=True)
+    for i in range(5):
+        print(f"Cardholder {sortedCarers[i][0]} has returned {sortedCarers[i][1]} out of {sortedCarers[i][2]} books with the same quality")
+
+
 
 def main():
     parser = argparse.ArgumentParser(description='Simple social network CLI')
     parser.add_argument('action', choices=['populate','getAvailableBooks','mostAvailablePopular', 'addCardholder', 'addBook', 
-                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks','mostPopular'],
+                                           'checkOutBook', 'returnBook','getAvgPages','cardHolderBooks','getNewBooks','mostPopular', 'bestCarer'],
                         help='Action to perform')
     
     parser.add_argument('--name')
@@ -178,15 +222,17 @@ def main():
     if args.action == 'addBook':
         addBook(args.name, args.genre, args.pages, args.quality, args.availability)
     if args.action == 'checkOutBook':
-        checkOutBook(args.cardholderId, args.bookId, args.quality)
+        checkOutBook(args.username, args.bookId, args.quality)
     if args.action == 'returnBook':
-        returnBook(args.cardholderId, args.bookId)
+        returnBook(args.username, args.bookId)
     if args.action == 'cardHolderBooks':
         cardHolderBooks(args.username)
     if args.action == 'getNewBooks':
         getNewBooks(args.username)
     if args.action == 'mostPopular':
         mostPopular()
+    if args.action == 'bestCarer':
+        bestCarer()
     
 
 if __name__ == "__main__":
